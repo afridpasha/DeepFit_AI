@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Environment Variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Uploads & Generated Data
+Backend/uploads/*
+Backend/measurements/*
+Backend/jump_data/*
+Backend/validation_results/*
+!Backend/uploads/.gitkeep
+!Backend/measurements/.gitkeep
+!Backend/jump_data/.gitkeep
+
+# Models (large files)
+Backend/models/*.pt
+Backend/models/*.pth
+!Backend/models/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Test files
+test_*.py
+*_test.py
+
+# Documentation builds
+docs/_build/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

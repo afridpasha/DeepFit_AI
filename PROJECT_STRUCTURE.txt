@@ -1,0 +1,53 @@
+PROJECT STRUCTURE - HeightAndWeightCalculator
+==============================================
+
+📁 Frontend/
+   ├── templates/          (All HTML files)
+   └── static/            (CSS, JS, images)
+
+📁 Backend/
+   ├── app.py                          (Main Flask application)
+   ├── integrated_system.py            (Height/Weight detection system)
+   ├── situp_blueprint.py              (Situp exercise module)
+   ├── dumbbell_blueprint.py           (Dumbbell curl module)
+   ├── vertical_jump_blueprint.py      (Vertical jump module)
+   ├── advanced_jump_detector.py       (Jump detection logic)
+   ├── enhanced_ui.py                  (UI components)
+   ├── enhanced_height_weight_estimator.py
+   ├── dynamic_benchmarks.py           (Athlete matching)
+   ├── benchmark_routes.py             (Benchmark API routes)
+   ├── benchmark_api.py
+   ├── db_config.py                    (MongoDB configuration)
+   ├── db_utils.py
+   ├── session_manager.py              (User session handling)
+   ├── auth_middleware.py
+   ├── get_current_user.py
+   ├── error_logger.py                 (Logging system)
+   ├── flask_integration.py
+   ├── train_model.py                  (Model training script)
+   ├── requirements.txt                (Python dependencies)
+   ├── requirements_advanced.txt
+   ├── .gitignore
+   ├── models/                         (Weight estimation models)
+   │   ├── weight_rf_model.pkl
+   │   └── weight_scaler.pkl
+   ├── logs/                           (Application logs)
+   ├── measurements/                   (Saved measurements)
+   ├── validation_results/             (Test results)
+   ├── jump_data/                      (Jump exercise data)
+   └── uploads/                        (User uploads)
+
+📁 Datasets/
+   ├── AthleteData.csv                 (Athlete benchmark data)
+   └── training_data.csv               (Model training data)
+
+📁 Models/
+   ├── yolov8n.pt                      (YOLOv8 model)
+   ├── scaler.pkl                      (Scaler model)
+   └── weight_model.pkl                (Weight prediction model)
+
+📁 venv/                               (Python virtual environment)
+📁 __pycache__/                        (Python cache)
+📁 .git/                               (Git repository)
+
+TOTAL: 4 Main Folders (Frontend, Backend, Datasets, Models)
