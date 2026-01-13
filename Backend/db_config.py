@@ -9,14 +9,16 @@ def connect_mongodb(max_retries=3, retry_delay=2):
     """
     Establish MongoDB connection with retry logic
     """
-    MONGODB_URI = os.getenv('MONGODB_URI')
+    MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
     DB_NAME = os.getenv('DB_NAME', 'sih2573')
     
     for attempt in range(max_retries):
         try:
             client = MongoClient(MONGODB_URI,
-                               serverSelectionTimeoutMS=5000,
-                               connectTimeoutMS=5000)
+                               serverSelectionTimeoutMS=10000,
+                               connectTimeoutMS=10000,
+                               tls=True,
+                               tlsAllowInvalidCertificates=False)
             
             client.server_info()
             print(f"[SUCCESS] MongoDB connection successful (attempt {attempt + 1})")
@@ -24,10 +26,13 @@ def connect_mongodb(max_retries=3, retry_delay=2):
             db = client[DB_NAME]
             
             # Create indexes
-            db['users'].create_index('email', unique=True)
-            db['exercise_sessions'].create_index([('user_id', 1), ('date', -1)])
-            db['exercise_results'].create_index([('session_id', 1)])
-            db['exercise_results'].create_index([('user_id', 1), ('analyzed_at', -1)])
+            try:
+                db['users'].create_index('email', unique=True)
+                db['exercise_sessions'].create_index([('user_id', 1), ('date', -1)])
+                db['exercise_results'].create_index([('session_id', 1)])
+                db['exercise_results'].create_index([('user_id', 1), ('analyzed_at', -1)])
+            except Exception as idx_error:
+                print(f"Index creation warning: {idx_error}")
             
             return client, db
             
