@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepFit - Situps Counter</title>
+    <title>DeepFit - Dumbbell Curl Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='situp-modern.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/exercise-common.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/exercise-header.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <meta name="theme-color" content="#000000">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
 <body>
     <div class="container">
         <header class="app-header">
             <div class="header-content">
                 <div class="header-title">
-                    <h1><span class="header-icon">🏋️</span> Sit-Ups Counter</h1>
-                    <p>Your AI-powered personal trainer for perfect situps</p>
+                    <h1><span class="header-icon">💪</span> Dumbbell Curl Tracker</h1>
+                    <p>Your AI-powered personal trainer for perfect dumbbell curls</p>
                 </div>
                 <a href="/" class="btn btn-secondary btn-back">
                     <i class="fas fa-arrow-left"></i>
@@ -30,12 +29,11 @@
         <div class="main-content">
             <div class="video-section">
                 <div class="video-container">
-                    <img id="video-feed" src="" alt="Camera feed will appear here" style="display: none;" 
-                         onerror="this.style.display='none'; document.getElementById('placeholder').style.display='flex';">
+                    <img id="video-feed" src="" alt="Camera feed will appear here" style="display: none;">
                     <div id="placeholder" class="video-placeholder">
                         <div class="placeholder-content">
                             <h3>📹 Camera Ready</h3>
-                            <p>Click "Start Camera" to begin your situps session</p>
+                            <p>Click "Start Camera" to begin your dumbbell curl session</p>
                         </div>
                     </div>
                 </div>
@@ -44,7 +42,6 @@
                     <button id="start-btn" class="btn btn-primary">Start Camera</button>
                     <button id="stop-btn" class="btn btn-secondary" disabled>Stop Camera</button>
                     <button id="reset-btn" class="btn btn-warning">Reset Counter</button>
-                    <button id="submit-btn" class="btn btn-success">Submit</button>
                 </div>
             </div>
 
@@ -54,11 +51,6 @@
                     <div class="timer-display">
                         <div class="time-remaining" id="timer-display">3:00</div>
                         <div class="timer-label">Time Remaining</div>
-                        <div class="timer-progress">
-                            <div class="timer-progress-bar">
-                                <div class="timer-progress-fill" id="timer-progress"></div>
-                            </div>
-                        </div>
                         <div class="session-status" id="session-status">Ready to start</div>
                     </div>
                 </div>
@@ -67,32 +59,44 @@
                     <h3>📊 Workout Stats</h3>
                     
                     <div class="stat-item">
-                        <div class="stat-label">Reps Completed</div>
-                        <div class="stat-value" id="reps-count">0</div>
+                        <div class="stat-label">Left Reps</div>
+                        <div class="stat-value" id="left-reps">0</div>
                     </div>
                     
                     <div class="stat-item">
-                        <div class="stat-label">Form Quality</div>
-                        <div class="stat-value" id="form-percentage">0%</div>
+                        <div class="stat-label">Right Reps</div>
+                        <div class="stat-value" id="right-reps">0</div>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="form-progress"></div>
+
+                    <div class="stat-item">
+                        <div class="stat-label">Total Reps</div>
+                        <div class="stat-value" id="total-reps">0</div>
                     </div>
                     
                     <div class="stat-item">
-                        <div class="stat-label">Feedback</div>
-                        <div class="feedback" id="feedback">Get Ready</div>
+                        <div class="stat-label">Left Arm Status</div>
+                        <div class="feedback" id="left-status">Not visible</div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-label">Right Arm Status</div>
+                        <div class="feedback" id="right-status">Not visible</div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-label">Estimated Weight</div>
+                        <div class="stat-value" id="estimated-weight">0.0 kg</div>
                     </div>
                 </div>
 
                 <div class="instructions-card">
                     <h3>📋 Instructions</h3>
                     <ul>
-                        <li>Lie down on your back with knees bent</li>
-                        <li>Keep your feet flat on the ground</li>
-                        <li>Place hands behind your head</li>
-                        <li>Lift your torso towards your knees</li>
-                        <li>Lower back down slowly</li>
+                        <li>Keep elbows fixed close to your body</li>
+                        <li>Full range of motion: start with arms straight</li>
+                        <li>Controlled tempo: 1-2 seconds up, 2-3 seconds down</li>
+                        <li>Face the camera directly for accurate detection</li>
+                        <li>Keep one arm stationary while curling with the other</li>
                     </ul>
                 </div>
             </div>
@@ -100,6 +104,6 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/webcam-capture.js') }}"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='dumbbell-script.js') }}"></script>
 </body>
 </html>

@@ -4,19 +4,29 @@ __pycache__/
 *$py.class
 *.so
 .Python
-*.egg-info/
-dist/
-build/
-
-# Virtual Environment
-venv/
 env/
+venv/
 ENV/
-.venv
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Environment Variables
+# Environment
 .env
 .env.local
+.venv
 
 # IDE
 .vscode/
@@ -25,57 +35,28 @@ ENV/
 *.swo
 *~
 
+# OS
+.DS_Store
+Thumbs.db
+
 # Logs
 logs/
 *.log
 
-# Database
-*.db
-*.sqlite
+# Uploads
+uploads/
+jump_data/
+validation_results/
 
-# Uploads & Generated Data
-Backend/uploads/*
-Backend/measurements/*
-Backend/jump_data/*
-Backend/validation_results/*
-!Backend/uploads/.gitkeep
-!Backend/measurements/.gitkeep
-!Backend/jump_data/.gitkeep
+# Cache
+.cache/
+*.cache
 
-# Models (large files)
-Backend/models/*.pt
-Backend/models/*.pth
-!Backend/models/.gitkeep
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-
-# Test files
-test_*.py
-*_test.py
-
-# Documentation builds
-docs/_build/
-
-# Coverage reports
-htmlcov/
+# Testing
+.pytest_cache/
 .coverage
-.coverage.*
+htmlcov/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# PyCharm
-.idea/
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# Local development
+*.local
+local_*

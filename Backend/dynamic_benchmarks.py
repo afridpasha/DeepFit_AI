@@ -29,18 +29,18 @@ class DynamicBenchmarkSystem:
             print(f"Loading athlete data from: {csv_path}")
             
             if not os.path.exists(csv_path):
-                print(f"❌ File not found at: {csv_path}")
+                print(f"[ERROR] File not found at: {csv_path}")
                 return None
             
             data = pd.read_csv(csv_path)
-            print(f"✅ Athlete data loaded successfully: {len(data)} athletes")
+            print(f"[OK] Athlete data loaded successfully: {len(data)} athletes")
             return data
             
         except FileNotFoundError:
-            print("❌ AthleteData.csv not found")
+            print("[ERROR] AthleteData.csv not found")
             return None
         except Exception as e:
-            print(f"❌ Error loading athlete data: {e}")
+            print(f"[ERROR] Error loading athlete data: {e}")
             return None
     
     def get_user_profile(self, email):

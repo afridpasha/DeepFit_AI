@@ -1,3 +1,6 @@
+/* Modern Situp Pages Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 /* Responsive Chart Inner for Dumbbell Graphs */
 .responsive-chart-inner {
     width: 100%;
@@ -75,9 +78,6 @@
     min-height: 320px;
     background: transparent;
 }
-
-/* Modern Situp Pages Stylesheet */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * {
     margin: 0;

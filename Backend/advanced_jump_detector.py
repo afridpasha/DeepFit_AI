@@ -24,9 +24,9 @@ class AdvancedJumpDetector:
         self.mp_drawing = mp.solutions.drawing_utils
         self.pose = self.mp_pose.Pose(
             static_image_mode=False,
-            model_complexity=2,
-            enable_segmentation=True,
-            min_detection_confidence=0.7,
+            model_complexity=0,
+            enable_segmentation=False,
+            min_detection_confidence=0.5,
             min_tracking_confidence=0.5
         )
         
@@ -38,21 +38,21 @@ class AdvancedJumpDetector:
         self.feedback = "System Ready"
         
         # Advanced tracking
-        self.pose_history = deque(maxlen=120)  # 4 seconds at 30fps
-        self.velocity_history = deque(maxlen=60)
-        self.acceleration_history = deque(maxlen=30)
+        self.pose_history = deque(maxlen=30)
+        self.velocity_history = deque(maxlen=15)
+        self.acceleration_history = deque(maxlen=10)
         
         # Calibration
-        self.baseline_positions = deque(maxlen=90)  # 3 seconds
+        self.baseline_positions = deque(maxlen=30)
         self.pixels_per_cm = None
         self.is_calibrated = False
         self.calibration_frames = 0
-        self.reference_height_cm = 170  # Default human height
+        self.reference_height_cm = 170
         
         # Detection parameters
-        self.jump_threshold_velocity = 50  # pixels/frame
-        self.ground_threshold = 10  # pixels
-        self.smoothing_window = 7
+        self.jump_threshold_velocity = 50
+        self.ground_threshold = 10
+        self.smoothing_window = 3
         
         # Data storage
         self.jump_history = []
@@ -79,11 +79,11 @@ class AdvancedJumpDetector:
             self.mongo_client.admin.command('ping')
             self.mongo_db = self.mongo_client[DB_NAME]
             self.mongo_collection = self.mongo_db['Vertical_Jump']
-            print("✅ MongoDB connected successfully")
+            print("MongoDB connected successfully")
             print(f"Database: {self.mongo_db.name}")
             print(f"Collection: {self.mongo_collection.name}")
         except (ConnectionFailure, ServerSelectionTimeoutError) as e:
-            print(f"⚠️ MongoDB connection failed: {e}")
+            print(f"MongoDB connection failed: {e}")
             self.mongo_client = None
         
     def calculate_pixels_per_cm(self, landmarks):
@@ -186,20 +186,16 @@ class AdvancedJumpDetector:
         self.calibration_frames += 1
         self.baseline_positions.append(features['feet_center_y'])
         
-        if self.calibration_frames >= 90:  # 3 seconds
-            # Calculate stable baseline
+        if self.calibration_frames >= 30:
             baseline_array = np.array(self.baseline_positions)
             self.baseline_y = np.median(baseline_array)
-            
-            # Calculate noise level for adaptive thresholding
             noise_level = np.std(baseline_array)
             self.ground_threshold = max(10, noise_level * 2)
-            
             self.is_calibrated = True
             self.feedback = "Calibrated! Ready to jump"
             return True
         else:
-            progress = (self.calibration_frames / 90) * 100
+            progress = (self.calibration_frames / 30) * 100
             self.feedback = f"Calibrating... {progress:.0f}%"
             
         return False
@@ -272,23 +268,16 @@ class AdvancedJumpDetector:
     
     def calculate_jump_height(self):
         """Calculate accurate jump height using multiple methods"""
-        if len(self.pose_history) < 30:
+        if len(self.pose_history) < 10:
             return self.current_height_cm
             
-        # Method 1: Peak detection
         recent_heights = []
-        for pose in list(self.pose_history)[-60:]:  # Last 2 seconds
+        for pose in list(self.pose_history)[-20:]:
             height = (self.baseline_y - pose['feet_center_y']) / self.pixels_per_cm if self.pixels_per_cm else 0
             recent_heights.append(max(0, height))
             
         if recent_heights:
-            # Apply smoothing filter
-            if len(recent_heights) >= 7:
-                smoothed_heights = savgol_filter(recent_heights, 7, 3)
-                peak_height = np.max(smoothed_heights)
-            else:
-                peak_height = np.max(recent_heights)
-                
+            peak_height = np.max(recent_heights)
             return peak_height
             
         return self.current_height_cm
@@ -320,11 +309,11 @@ class AdvancedJumpDetector:
                 else:
                     self.detect_jump_advanced(features)
                 
-                # Draw pose landmarks
+                # Draw pose landmarks (minimal)
                 self.mp_drawing.draw_landmarks(
                     frame, results.pose_landmarks, self.mp_pose.POSE_CONNECTIONS,
-                    self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
-                    self.mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2)
+                    self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=1, circle_radius=1),
+                    self.mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=1)
                 )
                 
                 # Draw measurements
@@ -342,58 +331,40 @@ class AdvancedJumpDetector:
         return frame
     
     def draw_measurements(self, frame, features):
-        """Draw advanced measurements and indicators"""
+        """Draw minimal measurements"""
         h, w = frame.shape[:2]
         
         if self.is_calibrated and self.baseline_y:
-            # Draw baseline
             baseline_px = int(self.baseline_y)
-            cv2.line(frame, (50, baseline_px), (w-50, baseline_px), (0, 255, 0), 2)
-            cv2.putText(frame, "Ground Level", (55, baseline_px-10), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            cv2.line(frame, (50, baseline_px), (w-50, baseline_px), (0, 255, 0), 1)
             
-            # Draw height measurement
             feet_y = int(features['feet_center_y'])
             feet_x = int(features['feet_center_x'])
             
             if self.current_height_cm > 2:
-                cv2.line(frame, (feet_x, baseline_px), (feet_x, feet_y), (255, 0, 255), 3)
+                cv2.line(frame, (feet_x, baseline_px), (feet_x, feet_y), (255, 0, 255), 2)
                 cv2.putText(frame, f"{self.current_height_cm:.1f}cm", 
-                           (feet_x + 15, (baseline_px + feet_y)//2), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 255), 2)
-            
-            # Draw velocity indicator
-            if self.velocity_history:
-                velocity = self.velocity_history[-1]
-                velocity_color = (0, 255, 0) if velocity < 0 else (0, 0, 255)
-                cv2.putText(frame, f"Vel: {velocity:.1f}px/s", (feet_x + 15, feet_y - 30), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, velocity_color, 2)
+                           (feet_x + 10, (baseline_px + feet_y)//2), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 1)
     
     def draw_advanced_ui(self, frame):
-        """Draw compact user interface matching the reference image"""
-        # Compact background for stats (smaller panel)
-        panel_width = 280
-        panel_height = 160
+        """Draw minimal UI overlay"""
+        panel_width = 200
+        panel_height = 120
         cv2.rectangle(frame, (10, 10), (panel_width, panel_height), (0, 0, 0), -1)
-        cv2.rectangle(frame, (10, 10), (panel_width, panel_height), (255, 255, 255), 2)
-        
-        # Performance stats with smaller font
-        avg_fps = 1.0 / np.mean(self.frame_times) if self.frame_times else 0
+        cv2.rectangle(frame, (10, 10), (panel_width, panel_height), (255, 255, 255), 1)
         
         stats = [
             f"Jumps: {self.jump_count}",
             f"Current: {self.current_height_cm:.1f}cm",
             f"Max: {self.max_height_cm:.1f}cm",
             f"State: {self.state.upper()}",
-            f"Status: System Ready" if self.is_calibrated else "Calibrating...",
-            f"FPS: {avg_fps:.1f}",
-            f"Calibrated: {'YES' if self.is_calibrated else 'NO'}"
+            f"Cal: {'YES' if self.is_calibrated else 'NO'}"
         ]
         
         for i, stat in enumerate(stats):
-            color = (255, 255, 255)
-            cv2.putText(frame, stat, (20, 30 + i*20), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+            cv2.putText(frame, stat, (15, 30 + i*18), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
     
     def save_jump_data(self, height, features):
         """Save comprehensive jump data"""
@@ -414,7 +385,7 @@ class AdvancedJumpDetector:
     def save_to_mongodb(self):
         """Save session data to MongoDB"""
         if not self.jump_history:
-            print("⚠️ No data to save")
+            print("No data to save")
             return False
         
         try:
@@ -439,12 +410,12 @@ class AdvancedJumpDetector:
             }
             
             result = collection.insert_one(session_data)
-            print(f"✅ Data saved to MongoDB: {result.inserted_id}")
-            print(f"📁 Database: {DB_NAME}, Collection: Vertical_Jump")
+            print(f"Data saved to MongoDB: {result.inserted_id}")
+            print(f"Database: {DB_NAME}, Collection: Vertical_Jump")
             return True
             
         except Exception as e:
-            print(f"❌ MongoDB save failed: {e}")
+            print(f"MongoDB save failed: {e}")
             print(f"Error details: {str(e)}")
             
             # Fallback to JSON
@@ -466,10 +437,10 @@ class AdvancedJumpDetector:
                 
                 with open(filepath, 'w') as f:
                     json.dump(session_data_json, f, indent=2)
-                print(f"✅ Fallback: Data saved to {filepath}")
+                print(f"Fallback: Data saved to {filepath}")
                 return True
             except Exception as e2:
-                print(f"❌ Save failed: {e2}")
+                print(f"Save failed: {e2}")
                 return False
     
     def get_performance_stats(self):

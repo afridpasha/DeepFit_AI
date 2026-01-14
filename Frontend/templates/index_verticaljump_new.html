@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>DeepFit - Vertical Jump Tracker (WebSocket)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='situp-modern.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/exercise-common.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/exercise-header.css') }}?v=2">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <meta name="theme-color" content="#000000">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1><span class="header-icon">🏀</span> Vertical Jump Tracker</h1>
+                    <p>Your AI-powered vertical jump measurement system</p>
+                </div>
+                <a href="/" class="btn btn-secondary btn-back">
+                    ← Back to Home
+                </a>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="video-section">
+                <div class="video-container">
+                    <img id="video-feed" alt="Camera feed" style="display: none;">
+                    <div id="placeholder" class="video-placeholder">
+                        <div class="placeholder-content">
+                            <h3>📹 Camera Ready</h3>
+                            <p>Click "Start Camera" to begin calibration and jump tracking</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="start-btn" class="btn btn-primary">Start Camera</button>
+                    <button id="stop-btn" class="btn btn-secondary" disabled>Stop Camera</button>
+                    <button id="reset-btn" class="btn btn-warning">Reset Counter</button>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="timer-card">
+                    <h3>⏱️ Timer</h3>
+                    <div class="timer-display">
+                        <div class="time-remaining" id="timer-display">3:00</div>
+                        <div class="timer-label">Time Remaining</div>
+                        <div class="session-status" id="session-status">Ready to start</div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>📊 Jump Stats</h3>
+                    
+                    <div class="stat-item">
+                        <div class="stat-label">Total Jumps</div>
+                        <div class="stat-value" id="jump-count">0</div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-label">Current Height</div>
+                        <div class="stat-value" id="current-height">0.0 cm</div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-label">Max Height</div>
+                        <div class="stat-value" id="max-height">0.0 cm</div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-label">Jump State</div>
+                        <div class="feedback" id="jump-state">GROUND</div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-label">Feedback</div>
+                        <div class="feedback" id="feedback">System Ready</div>
+                    </div>
+
+                    <div class="stat-item">
+                        <div class="stat-label">Calibration</div>
+                        <div class="feedback" id="calibration-status">Not Calibrated</div>
+                    </div>
+                </div>
+
+                <div class="instructions-card">
+                    <h3>📋 Instructions</h3>
+                    <ul>
+                        <li>Stand still for 3 seconds to calibrate</li>
+                        <li>Face the camera directly, full body visible</li>
+                        <li>Jump straight up with arms extended</li>
+                        <li>Land softly in the same position</li>
+                        <li>Wait for system to detect landing before next jump</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof io === 'undefined') {
+            console.error('Socket.IO failed to load');
+            alert('Connection error. Please refresh the page.');
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/webcam-capture.js') }}?v=2"></script>
+    <script src="{{ url_for('static', filename='vertical-jump-script.js') }}?v=2"></script>
+</body>
+</html>
