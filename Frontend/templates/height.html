@@ -328,8 +328,8 @@ document.addEventListener('DOMContentLoaded', function() {
             notificationSystem.updateProgress(progressNotification, 0, 5);
             
             // Call the height weight system API
-            const response = await fetch('/height_weight_system', {
-                method: 'POST',
+            const response = await fetch('/height_weight/', {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
