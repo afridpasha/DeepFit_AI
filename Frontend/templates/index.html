@@ -23,7 +23,7 @@
             {% else %}
                 <div class="buttons"
                 style="display: flex; flex-direction: column; align-items: flex-start; gap: 16px; max-width: 320px;">
-                <a href="{{ url_for('height_detection') }}" class="btn-glass btn-lg w-100">
+                <a href="/height_weight/" class="btn-glass btn-lg w-100">
                     Height & Weight <i class="fas fa-ruler ml-2"></i>
                 </a>
                 <a href="/situp/" class="btn-glass btn-lg w-100">
@@ -273,7 +273,7 @@
         <span class="close">&times;</span>
         <h2>Result Analysis</h2>
         <div class="analysis-buttons">
-            <button class="analysis-btn" onclick="window.location.href='{{ url_for('performance_dashboard') }}'">
+            <button class="analysis-btn" onclick="window.location.href='/performance_dashboard';">
                 <i class="fas fa-ruler-vertical"></i>
                 <span>Height and Weight</span>
             </button>
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     window.onclick = function(event) {
-        if (event.target == modal) {
+        if (event.target === modal) {
             modal.style.display = 'none';
         }
     };
