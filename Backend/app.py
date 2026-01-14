@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify, Response
+from flask import Flask, render_template, request, session, redirect, url_for, send_from_directory, jsonify, Response, make_response
 from flask_cors import CORS
+from flask_socketio import SocketIO
 from pymongo import MongoClient
 from werkzeug.utils import secure_filename
 import os
@@ -26,6 +27,9 @@ load_dotenv()
 app = Flask(__name__, 
             template_folder='../Frontend/templates',
             static_folder='../Frontend/static')
+
+# Initialize SocketIO for WebSocket support
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Dashboard route: protected, fetch user details, render dashboard.html
 @app.route('/dashboard')
@@ -144,13 +148,41 @@ def get_db():
     return None
 
 # Import and register blueprints after CORS setup
-from situp_blueprint import situp_bp
-from vertical_jump_blueprint import vertical_jump_bp
-from dumbbell_blueprint import dumbbell_bp
+# Use original blueprints for local development (they work with physical camera)
+# For Render deployment, these will be replaced with WebSocket versions
+try:
+    # Try WebSocket blueprints first (for cloud deployment)
+    from situp_blueprint_websocket import situp_bp, process_frame_websocket as situp_ws
+    from vertical_jump_blueprint_websocket import vertical_jump_bp, process_frame_websocket as jump_ws
+    from dumbbell_blueprint_websocket import dumbbell_bp, process_frame_websocket as dumbbell_ws
+    from height_weight_blueprint_websocket import height_weight_bp, process_frame_websocket as height_weight_ws
+    
+    app.register_blueprint(situp_bp, url_prefix='/situp')
+    app.register_blueprint(vertical_jump_bp, url_prefix='/vertical_jump')
+    app.register_blueprint(dumbbell_bp, url_prefix='/dumbbell')
+    app.register_blueprint(height_weight_bp, url_prefix='/height_weight')
+    
+    # Register WebSocket handlers
+    situp_ws(socketio)
+    jump_ws(socketio)
+    dumbbell_ws(socketio)
+    height_weight_ws(socketio)
+    
+    print("Using WebSocket blueprints (cloud-ready)")
+except ImportError as e:
+    print(f"WebSocket blueprints not available: {e}")
+    # Fallback to original blueprints (local development only)
+    from situp_blueprint import situp_bp
+    from vertical_jump_blueprint import vertical_jump_bp
+    from dumbbell_blueprint import dumbbell_bp
+    
+    app.register_blueprint(situp_bp, url_prefix='/situp')
+    app.register_blueprint(vertical_jump_bp, url_prefix='/vertical_jump')
+    app.register_blueprint(dumbbell_bp, url_prefix='/dumbbell')
+    
+    print("Using original blueprints (local development)")
+
 from benchmark_routes import benchmark_bp
-app.register_blueprint(situp_bp, url_prefix='/situp')
-app.register_blueprint(vertical_jump_bp, url_prefix='/vertical_jump')
-app.register_blueprint(dumbbell_bp, url_prefix='/dumbbell')
 app.register_blueprint(benchmark_bp)
 
 # Global error and request handlers
@@ -738,6 +770,10 @@ def analysis():
 @app.route('/static/<path:path>')
 def serve_static(path):
     return send_from_directory('static', path)
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory('../Frontend/static', 'favicon.ico', mimetype='image/x-icon')
 
 @app.route('/static/workout_summary.json')
 def serve_workout_summary():
@@ -1653,10 +1689,22 @@ def create_sample_vertical_jump_data():
     
     return sample_data
 
-@app.route('/vertical_jump_ui')
-def vertical_jump_ui():
-    """Route for vertical jump UI page"""
-    return render_template('index_verticaljump.html')
+@app.route('/vertical_jump_new')
+def vertical_jump_new():
+    """Vertical jump UI with no-cache headers"""
+    try:
+        response = make_response(render_template('index_verticaljump_new.html'))
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except Exception as e:
+        print(f"Error rendering vertical_jump_new: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/test_route')
+def test_route():
+    return "TEST ROUTE WORKS - Server is running!"
 
 @app.route('/dumbbell_ui')
 def dumbbell_ui():
@@ -1961,4 +2009,4 @@ if __name__ == '__main__':
     # Render deployment: bind to 0.0.0.0 and use PORT env variable
     port = int(os.environ.get('PORT', 5000))
     flask_debug = os.environ.get('FLASK_DEBUG', 'False').lower() in ('1', 'true', 'yes')
-    app.run(host='0.0.0.0', port=port, debug=flask_debug, threaded=True)  
+    socketio.run(app, host='0.0.0.0', port=port, debug=flask_debug, allow_unsafe_werkzeug=True)  

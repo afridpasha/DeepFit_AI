@@ -39,14 +39,23 @@ class SitupsTracker {
         try {
             this.showLoading('Starting camera...');
             
-            // Add timestamp to prevent caching issues
+            // Initialize webcam capture
+            const webcamReady = await window.webcamCapture.init();
+            if (!webcamReady) {
+                this.showFeedback('Failed to access webcam. Please grant camera permissions.', 'error');
+                return;
+            }
+            
+            // Start server session
             const response = await fetch('/situp/start_camera?' + new Date().getTime());
             const data = await response.json();
             
             if (data.status === 'success') {
                 this.isRunning = true;
-                // Add timestamp to video feed URL to force refresh
-                this.videoFeed.src = '/situp/video_feed?' + new Date().getTime();
+                
+                // Start streaming frames to server via WebSocket
+                window.webcamCapture.startStreaming('video_frame');
+                
                 this.videoFeed.style.display = 'block';
                 this.placeholder.style.display = 'none';
                 
@@ -57,16 +66,22 @@ class SitupsTracker {
                 this.startStatsUpdate();
                 this.showFeedback('Camera started! Begin your situps.', 'success');
             } else {
-                this.showFeedback('Failed to start camera: ' + data.message, 'error');
+                this.showFeedback('Failed to start session: ' + data.message, 'error');
+                window.webcamCapture.stopStreaming();
             }
         } catch (error) {
+            console.error('Start camera error:', error);
             this.showFeedback('Error starting camera: ' + error.message, 'error');
+            window.webcamCapture.stopStreaming();
         }
     }
 
     async stopCamera() {
         try {
             await fetch('/situp/stop_camera');
+            
+            // Stop webcam streaming
+            window.webcamCapture.stopStreaming();
             
             this.isRunning = false;
             this.videoFeed.style.display = 'none';
@@ -80,6 +95,7 @@ class SitupsTracker {
             this.stopStatsUpdate();
             this.showFeedback('Camera stopped.', 'info');
         } catch (error) {
+            window.webcamCapture.stopStreaming();
             this.isRunning = false;
             this.videoFeed.style.display = 'none';
             this.placeholder.style.display = 'flex';

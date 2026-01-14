@@ -29,7 +29,7 @@
                 <a href="/situp/" class="btn-glass btn-lg w-100">
                     Situp <i class="fas fa-person-booth ml-2"></i>
                 </a>
-                <a href="/vertical_jump_ui" class="btn-glass btn-lg w-100">
+                <a href="/vertical_jump_new" class="btn-glass btn-lg w-100">
                     Vertical Jump <i class="fas fa-arrow-up ml-2"></i>
                 </a>
                 <a href="/dumbbell_ui" class="btn-glass btn-lg w-100">
@@ -124,6 +124,7 @@
     letter-spacing: 2px;
     background: linear-gradient(90deg, #00aaff 30%, #00ffd5 70%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 6px 30px rgba(0, 170, 255, 0.5), 0 2px 8px rgba(0,0,0,0.3);
     position: relative;
@@ -272,7 +273,7 @@
         <span class="close">&times;</span>
         <h2>Result Analysis</h2>
         <div class="analysis-buttons">
-            <button class="analysis-btn" onclick="window.location.href='{{ url_for('performance_dashboard') }}'">   <!-- ADD height route page-->
+            <button class="analysis-btn" onclick="window.location.href='{{ url_for('performance_dashboard') }}'">
                 <i class="fas fa-ruler-vertical"></i>
                 <span>Height and Weight</span>
             </button>
@@ -325,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.target == modal) {
             modal.style.display = 'none';
         }
-    }
+    };
 });
 
 // Show slides when the document is loaded

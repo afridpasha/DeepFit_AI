@@ -1,24 +1,29 @@
-from flask import Blueprint, render_template, Response, jsonify, request, session
-import cv2
-import mediapipe as mp
-import numpy as np
-import threading
-import time
-import json
-import os
-from datetime import datetime
-from pathlib import Path
-from bson import ObjectId
+from flask import Blueprint, jsonify, session, render_template
+from flask_socketio import emit
 from db_config import get_db
+import cv2
+import numpy as np
+import time
+import base64
+from datetime import datetime
+from bson import ObjectId
 from advanced_jump_detector import AdvancedJumpDetector
 
 vertical_jump_bp = Blueprint('vertical_jump', __name__,
-                           template_folder='templates',
-                           static_folder='static',
+                           template_folder='../Frontend/templates',
+                           static_folder='../Frontend/static',
                            url_prefix='/vertical_jump')
 
-# Global variables
-camera = None
+@vertical_jump_bp.route('/')
+def index():
+    """Main vertical jump page with WebSocket support"""
+    from flask import make_response
+    response = make_response(render_template('index_verticaljump_new.html'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 is_recording = False
 session_active = False
 start_time = None
@@ -43,51 +48,11 @@ def get_current_user():
     except:
         return {'email': 'test_user_001@example.com'}
 
-def generate_frames():
-    global camera, is_recording, exercise_stats
-    
-    while is_recording and camera is not None:
-        success, frame = camera.read()
-        if not success:
-            break
-        
-        # Process frame with jump detector
-        frame = jump_detector.process_frame(frame)
-        
-        # Update stats
-        stats = jump_detector.get_performance_stats()
-        exercise_stats.update({
-            'total_jumps': stats['total_jumps'],
-            'current_height': stats['current_height'],
-            'max_height': stats['max_height'],
-            'state': stats['state'],
-            'calibrated': stats['calibrated'],
-            'feedback': stats['feedback']
-        })
-        
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
 @vertical_jump_bp.route('/start_camera')
 def start_camera():
-    global camera, is_recording, session_active, start_time
+    global is_recording, session_active, start_time
     
     try:
-        if camera is not None:
-            camera.release()
-            camera = None
-        
-        camera = cv2.VideoCapture(0)
-        if not camera.isOpened():
-            return jsonify({'status': 'error', 'message': 'Camera unavailable'})
-        
-        camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        camera.set(cv2.CAP_PROP_FPS, 30)
-        
         is_recording = True
         session_active = True
         start_time = time.time()
@@ -101,32 +66,20 @@ def start_camera():
 
 @vertical_jump_bp.route('/stop_camera')
 def stop_camera():
-    global camera, is_recording, session_active
+    global is_recording, session_active
     
     try:
         is_recording = False
         session_active = False
         
-        if camera:
-            camera.release()
-            camera = None
-        
-        # Get user info
         user = get_current_user()
         user_email = user['email']
         
-        # Get jump detector stats
         stats = jump_detector.get_performance_stats()
         
-        print(f"\n🔥 SAVING VERTICAL JUMP RESULTS 🔥")
-        print(f"✅ User Email: {user_email}")
-        print(f"📊 Total Jumps: {stats['total_jumps']}, Max Height: {stats['max_height']:.1f} cm")
-        
-        # Save to MongoDB using jump_detector's method
         try:
             db = get_db()
             if db:
-                # Get session data from jump detector
                 session_data = {
                     'user_email': user_email,
                     'session_start': jump_detector.session_start.isoformat(),
@@ -141,38 +94,25 @@ def stop_camera():
                     'submission_time': datetime.utcnow()
                 }
                 
-                print(f"💾 Data to save: Total jumps={session_data['total_jumps']}, Max height={session_data['max_height']}")
-                
                 collection = db['Vertical_Jump']
                 insert_result = collection.insert_one(session_data)
                 print(f"✅ MongoDB Save SUCCESS! ID: {insert_result.inserted_id}")
-                print(f"📁 Saved to: Database=sih2573, Collection=Vertical_Jump")
-            else:
-                print("❌ Database connection not available")
         except Exception as e:
             print(f"❌ MongoDB save error: {e}")
-            import traceback
-            traceback.print_exc()
         
         return jsonify({'status': 'success', 'message': 'Stopped and saved'})
         
     except Exception as e:
         print(f"❌ Error in stop_camera: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'status': 'error', 'message': str(e)})
 
 @vertical_jump_bp.route('/reset_counter')
 def reset_counter():
-    global exercise_stats, session_active, camera, is_recording
+    global exercise_stats, session_active, is_recording
     
     try:
         if is_recording:
             is_recording = False
-        
-        if camera is not None:
-            camera.release()
-            camera = None
         
         session_active = False
         jump_detector.reset_session()
@@ -191,11 +131,6 @@ def reset_counter():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
-@vertical_jump_bp.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(),
-                   mimetype='multipart/x-mixed-replace; boundary=frame')
-
 @vertical_jump_bp.route('/get_stats')
 def get_stats():
     if is_recording:
@@ -211,18 +146,51 @@ def get_stats():
     
     return jsonify(exercise_stats)
 
-@vertical_jump_bp.route('/cleanup', methods=['POST'])
-def cleanup():
-    global camera, is_recording, session_active
+@vertical_jump_bp.route('/video_feed')
+def video_feed():
+    """Dummy route - video is handled via WebSocket"""
+    return jsonify({'message': 'Video streaming via WebSocket'}), 200
+
+def process_frame_websocket(socketio_instance):
+    """WebSocket handler for processing vertical jump frames from browser"""
     
-    try:
-        is_recording = False
-        session_active = False
+    @socketio_instance.on('jump_frame')
+    def handle_jump_frame(data):
+        global is_recording, exercise_stats
         
-        if camera is not None:
-            camera.release()
-            camera = None
+        if not is_recording:
+            return
         
-        return '', 204
-    except Exception:
-        return '', 204
+        try:
+            img_data = base64.b64decode(data['image'].split(',')[1])
+            nparr = np.frombuffer(img_data, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            # Resize for faster processing
+            frame = cv2.resize(frame, (480, 360), interpolation=cv2.INTER_LINEAR)
+            
+            processed_frame = jump_detector.process_frame(frame)
+            
+            stats = jump_detector.get_performance_stats()
+            exercise_stats.update({
+                'total_jumps': stats['total_jumps'],
+                'current_height': stats['current_height'],
+                'max_height': stats['max_height'],
+                'state': stats['state'],
+                'calibrated': stats['calibrated'],
+                'feedback': stats['feedback']
+            })
+            
+            _, buffer = cv2.imencode('.jpg', processed_frame)
+            processed_img = base64.b64encode(buffer).decode('utf-8')
+            
+            emit('processed_jump_frame', {
+                'image': f'data:image/jpeg;base64,{processed_img}',
+                'stats': exercise_stats
+            })
+            
+        except Exception as e:
+            print(f"Error processing jump frame: {e}")
+            emit('error', {'message': str(e)})
+    
+    return handle_jump_frame

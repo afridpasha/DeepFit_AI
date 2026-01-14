@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CLEAR YOUR BROWSER CACHE!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 50px;
+            text-align: center;
+        }
+        .warning {
+            background: #ff0000;
+            color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 20px;
+        }
+        .steps {
+            background: #333;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 800px;
+            margin: 30px auto;
+            text-align: left;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #444;
+            border-left: 5px solid #00ff00;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 20px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <div class="warning">
+        <h1>⚠️ YOUR BROWSER IS SHOWING CACHED OLD PAGE! ⚠️</h1>
+        <p>Error "vertical_jump_new:457" proves you're seeing OLD cached content!</p>
+        <p>The NEW page only has 125 lines, not 457!</p>
+    </div>
+
+    <div class="steps">
+        <h2>DO THESE STEPS NOW:</h2>
+        
+        <div class="step">
+            <h3>STEP 1: Close ALL Browser Windows</h3>
+            <p>Close EVERY Chrome/Edge/Firefox window completely</p>
+        </div>
+
+        <div class="step">
+            <h3>STEP 2: Open Task Manager</h3>
+            <p>Press Ctrl+Shift+Esc</p>
+            <p>Find any Chrome/Edge processes and click "End Task"</p>
+        </div>
+
+        <div class="step">
+            <h3>STEP 3: Restart Flask Server</h3>
+            <p>In terminal: Press Ctrl+C to stop</p>
+            <p>Then run: python app.py</p>
+        </div>
+
+        <div class="step">
+            <h3>STEP 4: Use NEW URL</h3>
+            <p>Open browser in INCOGNITO mode (Ctrl+Shift+N)</p>
+            <p>Go to: <strong>http://127.0.0.1:5000/vertical_jump_new</strong></p>
+            <p style="color: #ff0000;">DO NOT use /vertical_jump_new - it's cached!</p>
+        </div>
+    </div>
+
+    <button onclick="window.location.href='/vertical_jump_new'">
+        GO TO NEW PAGE (UNCACHED)
+    </button>
+
+    <script>
+        // Auto-redirect after 5 seconds
+        setTimeout(function() {
+            window.location.href = '/vertical_jump_new';
+        }, 5000);
+    </script>
+</body>
+</html>

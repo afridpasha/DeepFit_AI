@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/exercise-common.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/exercise-header.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <meta name="theme-color" content="#000000">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
@@ -110,8 +111,10 @@
         </div>
     </div>
 
-    <script>
-        class DumbbellTracker {
+    <script src="{{ url_for('static', filename='js/webcam-capture.js') }}"></script>
+    <script src="{{ url_for('static', filename='dumbbell-script.js') }}"></script>
+</body>
+</html>
             constructor() {
                 this.isRunning = false;
                 this.statsInterval = null;
