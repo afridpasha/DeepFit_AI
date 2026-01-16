@@ -148,10 +148,8 @@ def get_db():
     return None
 
 # Import and register blueprints after CORS setup
-# Use original blueprints for local development (they work with physical camera)
-# For Render deployment, these will be replaced with WebSocket versions
+# Use WebSocket blueprints for cloud deployment (HuggingFace/Render)
 try:
-    # Try WebSocket blueprints first (for cloud deployment)
     from situp_blueprint_websocket import situp_bp, process_frame_websocket as situp_ws
     from vertical_jump_blueprint_websocket import vertical_jump_bp, process_frame_websocket as jump_ws
     from dumbbell_blueprint_websocket import dumbbell_bp, process_frame_websocket as dumbbell_ws
@@ -170,17 +168,8 @@ try:
     
     print("Using WebSocket blueprints (cloud-ready)")
 except ImportError as e:
-    print(f"WebSocket blueprints not available: {e}")
-    # Fallback to original blueprints (local development only)
-    from situp_blueprint import situp_bp
-    from vertical_jump_blueprint import vertical_jump_bp
-    from dumbbell_blueprint import dumbbell_bp
-    
-    app.register_blueprint(situp_bp, url_prefix='/situp')
-    app.register_blueprint(vertical_jump_bp, url_prefix='/vertical_jump')
-    app.register_blueprint(dumbbell_bp, url_prefix='/dumbbell')
-    
-    print("Using original blueprints (local development)")
+    print(f"WebSocket blueprints import error: {e}")
+    print("Warning: Blueprint files may be missing. Application may not function correctly.")
 
 from benchmark_routes import benchmark_bp
 app.register_blueprint(benchmark_bp)
@@ -2006,7 +1995,7 @@ def logout():
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    # Render deployment: bind to 0.0.0.0 and use PORT env variable
-    port = int(os.environ.get('PORT', 5000))
+    # HuggingFace deployment: bind to 0.0.0.0 and use PORT env variable (default 7860)
+    port = int(os.environ.get('PORT', 7860))
     flask_debug = os.environ.get('FLASK_DEBUG', 'False').lower() in ('1', 'true', 'yes')
     socketio.run(app, host='0.0.0.0', port=port, debug=flask_debug, allow_unsafe_werkzeug=True)  
