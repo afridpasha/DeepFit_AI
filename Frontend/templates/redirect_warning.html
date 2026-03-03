@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>USE THE NEW URL!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 24px;
+        }
+        .message {
+            text-align: center;
+            padding: 50px;
+            border: 5px solid #0f0;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        .url {
+            color: #ff0;
+            font-size: 32px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="message">
+        <h1>⚠️ STOP! ⚠️</h1>
+        <p>DO NOT USE THIS URL!</p>
+        <p>TYPE THIS URL DIRECTLY:</p>
+        <div class="url">http://127.0.0.1:5000/vertical_jump_new</div>
+        <p>Redirecting in <span id="countdown">3</span>...</p>
+    </div>
+    <script>
+        let count = 3;
+        const countdown = document.getElementById('countdown');
+        const timer = setInterval(() => {
+            count--;
+            countdown.textContent = count;
+            if (count <= 0) {
+                clearInterval(timer);
+                window.location.replace('/vertical_jump_new');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

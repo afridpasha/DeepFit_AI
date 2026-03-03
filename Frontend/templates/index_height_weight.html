@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Height & Weight Measurement - Full Screen</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #video-feed {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            object-fit: contain;
+        }
+
+        #back-btn {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top));
+            left: max(10px, env(safe-area-inset-left));
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(0, 0, 0, 0.72);
+            color: #fff;
+            text-decoration: none;
+            font-size: 22px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            backdrop-filter: blur(8px);
+            transition: background 0.2s ease;
+        }
+
+        #back-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        #controls-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        #autosave-status-badge {
+            position: absolute;
+            top: -34px;
+            right: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(8, 20, 8, 0.88);
+            border: 1px solid rgba(75, 255, 126, 0.55);
+            color: #95ffb4;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            z-index: 1002;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+        
+        .control-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        
+        .control-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #start-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        #record-btn { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        #stop-btn { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+        #save-btn { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        #final-btn { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+        #reset-btn { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+        #autosave-btn { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); color: white; }
+        #autosave-btn:disabled {
+            opacity: 0.95;
+        }
+        
+        #keyboard-hints {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .hint-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .key {
+            background: #333;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            min-width: 25px;
+            text-align: center;
+        }
+
+        /* Mobile-only adjustments: keep desktop/laptop unchanged */
+        @media (max-width: 900px) {
+            #controls-panel {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: min(720px, calc(100vw - 16px));
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 6px;
+                padding: 26px 8px 8px;
+                bottom: max(8px, env(safe-area-inset-bottom));
+                max-height: 32dvh;
+                overflow-y: auto;
+            }
+
+            .control-btn {
+                width: 100%;
+                min-height: 34px;
+                padding: 6px 8px;
+                font-size: 11px;
+                border-radius: 6px;
+                line-height: 1.1;
+            }
+
+            #keyboard-hints {
+                display: none;
+            }
+
+            #back-btn {
+                top: max(8px, env(safe-area-inset-top));
+                left: max(8px, env(safe-area-inset-left));
+                width: 38px;
+                height: 38px;
+                font-size: 20px;
+            }
+
+            #autosave-status-badge {
+                top: 5px;
+                right: 8px;
+                font-size: 10px;
+                padding: 5px 8px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            #controls-panel {
+                width: calc(100vw - 12px);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 5px;
+                padding: 24px 6px 6px;
+                max-height: 29dvh;
+            }
+
+            .control-btn {
+                min-height: 30px;
+                padding: 4px 6px;
+                font-size: 10.5px;
+                border-radius: 6px;
+            }
+        }
+
+        @media (max-width: 520px) and (max-height: 760px) {
+            #controls-panel {
+                gap: 4px;
+                padding: 22px 5px 5px;
+                max-height: 26dvh;
+            }
+
+            .control-btn {
+                min-height: 28px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <img id="video-feed" alt="Camera feed" style="display: none;">
+    </div>
+
+    <a id="back-btn" href="/dashboard" aria-label="Go back" title="Back">&larr;</a>
+    
+    <div id="keyboard-hints">
+        <div class="hint-item"><span class="key">S</span> Save</div>
+        <div class="hint-item"><span class="key">F</span> Submit</div>
+        <div class="hint-item"><span class="key">R</span> Reset</div>
+        <div class="hint-item"><span class="key">C</span> Auto-save (Always ON)</div>
+        <div class="hint-item"><span class="key">Q</span> Quit</div>
+    </div>
+    
+    <div id="controls-panel">
+        <div id="autosave-status-badge">Auto-saved: 0/10</div>
+        <button id="start-btn" class="control-btn">Start</button>
+        <button id="record-btn" class="control-btn" disabled>Record</button>
+        <button id="stop-btn" class="control-btn" disabled>Stop</button>
+        <button id="save-btn" class="control-btn" disabled>Save (S)</button>
+        <button id="final-btn" class="control-btn" disabled>Submit (F) 0/10</button>
+        <button id="reset-btn" class="control-btn">Reset (R)</button>
+        <button id="autosave-btn" class="control-btn">Auto ON (C)</button>
+    </div>
+
+        <script src="{{ url_for('static', filename='js/webcam-capture.js') }}"></script>
+    <script>
+        let isStarted = false;
+        let isRecording = false;
+        let autoSaveEnabled = true;
+        const MIN_SUBMIT_SAMPLES = 10;
+        let autoFinalRedirectTriggered = false;
+
+        const startBtn = document.getElementById('start-btn');
+        const recordBtn = document.getElementById('record-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const finalBtn = document.getElementById('final-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const autosaveBtn = document.getElementById('autosave-btn');
+        const autosaveStatusBadge = document.getElementById('autosave-status-badge');
+        const videoFeed = document.getElementById('video-feed');
+        const backBtn = document.getElementById('back-btn');
+
+        function setSubmitProgress(count) {
+            const safeCount = Number.isFinite(count) ? Math.max(0, count) : 0;
+            finalBtn.textContent = `Submit (F) ${Math.min(safeCount, MIN_SUBMIT_SAMPLES)}/${MIN_SUBMIT_SAMPLES}`;
+            finalBtn.disabled = safeCount < MIN_SUBMIT_SAMPLES;
+            const progressText = `Auto-saved: ${Math.min(safeCount, MIN_SUBMIT_SAMPLES)}/${MIN_SUBMIT_SAMPLES}`;
+            autosaveStatusBadge.textContent = safeCount > MIN_SUBMIT_SAMPLES
+                ? `${progressText} (Total ${safeCount})`
+                : progressText;
+        }
+
+        // Auto-save is locked ON by design for standing-user workflow.
+        autoSaveEnabled = true;
+        autosaveBtn.textContent = 'Auto ON';
+        autosaveBtn.disabled = true;
+
+        setSubmitProgress(0);
+
+        backBtn.addEventListener('click', (event) => {
+            if (document.referrer && window.history.length > 1) {
+                event.preventDefault();
+                window.history.back();
+            }
+        });
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                const webcamReady = await window.webcamCapture.init();
+                if (!webcamReady) {
+                    alert('Failed to access webcam');
+                    return;
+                }
+
+                const response = await fetch('/height_weight/start_measurement');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    isStarted = true;
+                    isRecording = true;
+                    autoFinalRedirectTriggered = false;
+                    window.webcamCapture.startStreaming('height_weight_frame');
+                    videoFeed.style.display = 'block';
+
+                    startBtn.disabled = true;
+                    recordBtn.disabled = false;
+                    stopBtn.disabled = false;
+                    saveBtn.disabled = false;
+                    setSubmitProgress(0);
+                } else {
+                    alert(data.message || 'Unable to start measurement');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        recordBtn.addEventListener('click', () => {
+            isRecording = true;
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+            if (!isStarted) {
+                startBtn.click();
+            }
+        });
+
+        stopBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/height_weight/stop_measurement');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    window.webcamCapture.stopStreaming();
+                    videoFeed.removeAttribute('src');
+                    videoFeed.style.display = 'none';
+
+                    isStarted = false;
+                    isRecording = false;
+                    startBtn.disabled = false;
+                    recordBtn.disabled = true;
+                    stopBtn.disabled = true;
+                } else {
+                    alert(data.message || 'Unable to stop measurement');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        saveBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/height_weight/save_measurement');
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        finalBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/height_weight/final_estimate');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert(data.message);
+                    setTimeout(() => {
+                        window.location.href = '/performance_dashboard';
+                    }, 1000);
+                } else {
+                    alert(data.message || 'Submit failed');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        resetBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/height_weight/reset_measurement');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    autoFinalRedirectTriggered = false;
+                    setSubmitProgress(0);
+                    alert(data.message);
+                } else {
+                    alert(data.message || 'Reset failed');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        autosaveBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/height_weight/toggle_autosave');
+                const data = await response.json();
+                autoSaveEnabled = true;
+                autosaveBtn.textContent = 'Auto ON';
+                if (data.message) {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 's':
+                    if (!saveBtn.disabled) saveBtn.click();
+                    break;
+                case 'f':
+                    if (!finalBtn.disabled) finalBtn.click();
+                    break;
+                case 'r':
+                    resetBtn.click();
+                    break;
+                case 'c':
+                    break;
+                case 'q':
+                    if (confirm('Quit?')) window.location.href = '/dashboard';
+                    break;
+            }
+        });
+
+        window.addEventListener('height_weight_frame_processed', (event) => {
+            const data = event.detail;
+            if (data && data.measurement && Number.isFinite(data.measurement.auto_saved_count)) {
+                setSubmitProgress(data.measurement.auto_saved_count);
+            }
+
+            if (
+                data &&
+                data.measurement &&
+                data.measurement.auto_finalized === true &&
+                !autoFinalRedirectTriggered
+            ) {
+                autoFinalRedirectTriggered = true;
+                alert('10 valid measurements completed. Final result stored automatically.');
+                setTimeout(() => {
+                    window.location.href = '/performance_dashboard';
+                }, 700);
+            }
+        });
+    </script>
+</body>
+</html>
+
